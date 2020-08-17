@@ -1,0 +1,12 @@
+{
+	"authors": [
+		"Charles Gregory"
+	],
+	"copyright": "Copyright © 2020, Charles Gregory",
+	"dependencies": {
+		"dhtslib": "~>0.10.1"
+	},
+	"description": "A minimal D application.",
+	"license": "MIT",
+	"name": "maskerade"
+}

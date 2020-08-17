@@ -1,0 +1,15 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/maskerade
+maskerade.so
+maskerade.dylib
+maskerade.dll
+maskerade.a
+maskerade.lib
+maskerade-test-*
+*.exe
+*.o
+*.obj
+*.lst
