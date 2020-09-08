@@ -13,3 +13,6 @@ maskerade-test-*
 *.o
 *.obj
 *.lst
+*.bam
+*.bam.bai
+*.bed

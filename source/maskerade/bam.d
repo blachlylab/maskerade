@@ -9,12 +9,14 @@ import std.array: array;
 import maskerade.nmask;
 import std.stdio;
 
-void processReads(SAMReader * bamr, SAMWriter * bamw, IITree!BasicInterval * tree, bool invert){
-    if(invert) processReads!true(bamr,bamw,tree);
-    else processReads!false(bamr,bamw,tree);
+void processReads(SAMReader * bamr, SAMWriter * bamw, IITree!BasicInterval * tree, bool invert, bool eject){
+    if(invert && eject) processReads!(true,true)(bamr,bamw,tree);
+    else if(invert) processReads!(true,false)(bamr,bamw,tree);
+    else if(eject) processReads!(false,true)(bamr,bamw,tree);
+    else processReads!(false,false)(bamr,bamw,tree);
 }
 
-void processReads(bool invert)(SAMReader * bamr, SAMWriter * bamw, IITree!BasicInterval * tree){
+void processReads(bool invert, bool eject)(SAMReader * bamr, SAMWriter * bamw, IITree!BasicInterval * tree){
     auto contigs = bamr.target_names;
     foreach(SAMRecord rec; bamr.all_records){
         if(rec.isSecondary || !rec.isMapped) continue;
@@ -22,7 +24,10 @@ void processReads(bool invert)(SAMReader * bamr, SAMWriter * bamw, IITree!BasicI
         auto cigar = Cigar(rec.cigar.ops.dup);
         auto interval = BasicInterval(rec.pos, rec.pos + cigar.ref_bases_covered);
         auto overlaps = tree.findOverlapsWith(contig,interval).map!(x=> *(cast(BasicInterval *) x.interval)).array;
-        if(!overlaps.length) continue;
+        if(!overlaps.length){
+            static if(!eject) bamw.write(&rec);
+            continue;
+        }
         auto refRegions = overlaps.map!(x => BasicInterval(x.start - rec.pos, x.end - rec.pos)).array;
         if(refRegions[0].start < 0) refRegions[0].start = 0;
         if(refRegions[$-1].end >= cigar.ref_bases_covered) refRegions[$-1].end = cigar.ref_bases_covered;
@@ -30,7 +35,7 @@ void processReads(bool invert)(SAMReader * bamr, SAMWriter * bamw, IITree!BasicI
         // writeln(refRegions);
         // debug verifyRegions(refRegions, cigar.ref_bases_covered);
         
-        auto readRegions = convertRposToQpos(cigar,refRegions);
+        auto readRegions = convertRposToQpos(rec.getAlignedCoordinates,refRegions);
         // writeln(readRegions);
         // debug verifyRegions(readRegions, rec.length);
 
@@ -58,53 +63,20 @@ void verifyRegions(BasicInterval[] regions, int length){
     }
 }
 
-BasicInterval[] convertRposToQpos(Cigar cigar, BasicInterval[] regions){
-    auto ops = cigar.ops;
-    int qpos, rpos;
+BasicInterval[] convertRposToQpos(Range)(Range alignedCoords, BasicInterval[] regions){
     BasicInterval[] readRegions = new BasicInterval[regions.length];
-    if(ops[0].op == Ops.HARD_CLIP) ops = ops[1..$];
-    if(ops[0].op == Ops.SOFT_CLIP) qpos += ops[0].length, ops = ops[1..$];
-    if(ops[$-1].op == Ops.HARD_CLIP) ops = ops[0..$-1];
     foreach (i,BasicInterval region; regions)
     {
-        CigarOp last_op;
-        bool iterated = false;
-        while(rpos < region.start){
-            iterated = true;
-            auto refConsuming = ops[0].is_reference_consuming;
-            auto queryConsuming = ops[0].is_query_consuming;
-            if(refConsuming){
-                rpos += ops[0].length;
-            }
-            if(queryConsuming){
-                qpos += ops[0].length;
-            }
-            last_op = ops[0];
-            ops = ops[1..$];
+        while(alignedCoords.front.rpos < region.start){
+            alignedCoords.popFront;
         }
-        if(iterated && last_op.is_query_consuming) readRegions[i].start = qpos - (rpos - region.start);
-        else readRegions[i].start = qpos;
-        // writeln(readRegions[i].start," ",rpos," ",qpos," ",region.end," ",last_op.is_reference_consuming," ",iterated);
-        last_op = last_op.init;
-        iterated = false;
+        readRegions[i].start = alignedCoords.front.qpos;
 
-        while(rpos < region.end){
-            iterated = true;
-            auto refConsuming = ops[0].is_reference_consuming;
-            auto queryConsuming = ops[0].is_query_consuming;
-            if(refConsuming){
-                rpos += ops[0].length;
-            }
-            if(queryConsuming){
-                qpos += ops[0].length;
-            }
-            last_op = ops[0];
-            ops = ops[1..$];
+        while(alignedCoords.front.rpos < region.end){
+            if(alignedCoords.empty) break;
+            alignedCoords.popFront;
         }
-        // writeln(readRegions[i].start," ",rpos," ",qpos," ",region.end," ",last_op.is_reference_consuming," ",iterated);
-        if(iterated && last_op.is_query_consuming) readRegions[i].end = qpos - (rpos - region.end);
-        else readRegions[i].end = qpos;
-        // writeln(readRegions[i]);
+        readRegions[i].end = alignedCoords.front.qpos;
     }
     return readRegions;
 }

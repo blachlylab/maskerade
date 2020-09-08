@@ -13,6 +13,7 @@ void main(string[] args)
     bool s;
     bool b;
 	bool invert;
+    bool eject;
     GetoptResult res;
     try
     {
@@ -21,7 +22,8 @@ void main(string[] args)
 					"bam|b", "output bam", &b, 
 					"ubam|u", "output uncompressed bam", &u, 
 					"sam|s", "output sam", &s,
-					"invert|v", "invert n-masking",&invert);
+					"invert|v", "invert n-masking",&invert,
+                    "eject|e", "eject reads that don't overlap with any provided regions",&eject);
     }
     catch (GetOptException e)
     {
@@ -61,6 +63,6 @@ void main(string[] args)
             return;
         }
     }
-	processReads(&bamr, &bamw, &tree,invert);
+	processReads(&bamr, &bamw, &tree,invert,eject);
 	bamw.close;
 }
