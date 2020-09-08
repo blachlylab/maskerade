@@ -12,6 +12,7 @@ void main(string[] args)
     bool u;
     bool s;
     bool b;
+	bool invert;
     GetoptResult res;
     try
     {
@@ -19,7 +20,8 @@ void main(string[] args)
 					"threads|t", "Threads for decompression/compression (will be split)", &threads,
 					"bam|b", "output bam", &b, 
 					"ubam|u", "output uncompressed bam", &u, 
-					"sam|s", "output sam", &s);
+					"sam|s", "output sam", &s,
+					"invert|v", "invert n-masking",&invert);
     }
     catch (GetOptException e)
     {
@@ -59,6 +61,6 @@ void main(string[] args)
             return;
         }
     }
-	processReads(&bamr, &bamw, &tree);
+	processReads(&bamr, &bamw, &tree,invert);
 	bamw.close;
 }

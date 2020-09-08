@@ -9,7 +9,12 @@ import std.array: array;
 import maskerade.nmask;
 import std.stdio;
 
-void processReads(SAMReader * bamr, SAMWriter * bamw, IITree!BasicInterval * tree){
+void processReads(SAMReader * bamr, SAMWriter * bamw, IITree!BasicInterval * tree, bool invert){
+    if(invert) processReads!true(bamr,bamw,tree);
+    else processReads!false(bamr,bamw,tree);
+}
+
+void processReads(bool invert)(SAMReader * bamr, SAMWriter * bamw, IITree!BasicInterval * tree){
     auto contigs = bamr.target_names;
     foreach(SAMRecord rec; bamr.all_records){
         if(rec.isSecondary || !rec.isMapped) continue;
@@ -29,11 +34,17 @@ void processReads(SAMReader * bamr, SAMWriter * bamw, IITree!BasicInterval * tre
         // writeln(readRegions);
         // debug verifyRegions(readRegions, rec.length);
 
-        auto invertedRegions = invertIntervals(readRegions,rec.length).filter!(x => x.start != x.end).array;
+        static if(invert){
+            auto invertedRegions = invertIntervals(readRegions,rec.length).filter!(x => x.start != x.end).array;
+            debug verifyRegions(invertedRegions, rec.length);
+            nmaskRead(&rec, invertedRegions);
+        }else{
+            readRegions = readRegions.filter!(x => x.start != x.end).array;
+            debug verifyRegions(readRegions, rec.length);
+            nmaskRead(&rec, readRegions);
+        }
         // writeln(invertedRegions);
-        debug verifyRegions(invertedRegions, rec.length);
-
-        nmaskRead(&rec, invertedRegions);
+        
         bamw.write(&rec);
     }
 }
