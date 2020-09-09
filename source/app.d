@@ -5,9 +5,38 @@ import maskerade.bam;
 import dhtslib.sam;
 import intervaltree;
 import std.algorithm: map;
+import std.range: takeExactly, generate;
+import std.array: array, join;
+import std.random;
+
+string logo = "                                        /
+                                        /
+           NNNNNNNNNNNNNNNNNN           /
+        NNNNNNNNNNNNNNNNNNNNNNNN        /
+       NNNNNNNNNNNNNNNNNNNNNNNNNN       /
+      NNNNN    NNNNNNNNNN    NNNNN      /
+      NNN       NNNNNNNN       NNN      /
+     NNNNNNnnnnNNNNNNNNNNnnnnNNNNNN     /
+      NNNNNNNNNNNNNNNNNNNNNNNNNNNN      /
+       NNNNNNNNN        NNNNNNNNN       /
+                                        /
+                                        /";
+
+auto bases = ["\033[0;31mt\033[0m","\033[0;33mg\033[0m","\033[0;34mc\033[0m","\033[0;32ma\033[0m"];
+
 
 void main(string[] args)
 {
+    auto background = generate!(() => uniform(0, 4)).takeExactly(logo.length).array.map!(x=> bases[x]).array.join;
+    string editedLogo;
+    foreach (i,c; logo)
+    {
+        if(c =='n') editedLogo~="\033[1;30mn\033[0m";
+        else if(c =='N') editedLogo~="\033[1;30mN\033[0m";
+        else if(c=='\n') editedLogo~=c;
+        else editedLogo~=background[(i * 12) .. ((i * 12) + 12)];
+    }
+    stderr.writeln(editedLogo);
 	int threads = 0;
     bool u;
     bool s;
