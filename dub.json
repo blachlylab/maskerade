@@ -4,10 +4,8 @@
 	],
 	"copyright": "Copyright © 2020, Charles Gregory",
 	"dependencies": {
-		"dhtslib": {
-			"path": "../dhtslib"
-		},
-		"intervaltree": "~>0.20.0"
+		"dhtslib": "~>0.11.1+htslib-1.10",
+		"intervaltree": "~master"
 	},
 	"description": "A minimal D application.",
 	"license": "MIT",

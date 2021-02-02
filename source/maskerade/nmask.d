@@ -1,5 +1,5 @@
 module maskerade.nmask;
-import dhtslib.htslib.hts;
+import htslib.hts;
 
 pragma(inline, true)
 void nmaskSimple(ubyte[] seq, bool oddStart = false, bool oddEnd = false){
@@ -14,7 +14,7 @@ void nmaskSimple(ubyte[] seq, bool oddStart = false, bool oddEnd = false){
 }
 
 pragma(inline, true)
-void nmask(ubyte[] seq, int start, int end){
+void nmask(ubyte[] seq, long start, long end){
     assert(start >= 0);
     assert((end >> 1) + (end & 1) <= seq.length);
     nmaskSimple(seq[start >> 1 .. (end >> 1) + (end & 1)],start & 1, end & 1);
